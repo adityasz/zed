@@ -4846,8 +4846,11 @@ impl Workspace {
                     }
                 };
             }
+            pane::Event::ClosePane => {
+                self.join_pane_into_next(pane.clone(), false, window, cx);
+            }
             pane::Event::JoinIntoNext => {
-                self.join_pane_into_next(pane.clone(), window, cx);
+                self.join_pane_into_next(pane.clone(), true, window, cx);
             }
             pane::Event::JoinAll => {
                 self.join_all_panes(window, cx);
@@ -5023,6 +5026,7 @@ impl Workspace {
     pub fn join_pane_into_next(
         &mut self,
         pane: Entity<Pane>,
+        change_active_tab: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -5034,7 +5038,7 @@ impl Workspace {
         let Some(next_pane) = next_pane else {
             return;
         };
-        move_all_items(&pane, &next_pane, window, cx);
+        move_all_items(&pane, &next_pane, change_active_tab, window, cx);
         cx.notify();
     }
 
@@ -9872,13 +9876,14 @@ fn join_pane_into_active(
             });
         })
     } else {
-        move_all_items(pane, active_pane, window, cx);
+        move_all_items(pane, active_pane, true, window, cx);
     }
 }
 
 fn move_all_items(
     from_pane: &Entity<Pane>,
     to_pane: &Entity<Pane>,
+    change_active_tab: bool,
     window: &mut Window,
     cx: &mut App,
 ) {
@@ -9902,7 +9907,15 @@ fn move_all_items(
 
         // This automatically removes duplicate items in the pane
         to_pane.update(cx, |destination, cx| {
-            destination.add_item(item_handle, true, true, None, window, cx);
+            destination.add_item_inner(
+                item_handle,
+                true,
+                change_active_tab,
+                change_active_tab,
+                None,
+                window,
+                cx,
+            );
             window.focus(&destination.focus_handle(cx), cx)
         });
     }
@@ -11739,7 +11752,7 @@ mod tests {
             assert_eq!(center_pane_id, workspace.active_pane().entity_id());
 
             // Join into next from center pane into right
-            workspace.join_pane_into_next(workspace.active_pane().clone(), window, cx);
+            workspace.join_pane_into_next(workspace.active_pane().clone(), true, window, cx);
         });
 
         workspace.update_in(cx, |workspace, window, cx| {
@@ -11752,7 +11765,7 @@ mod tests {
             assert!(item_ids_in_pane.contains(&right_item.item_id()));
 
             // Join into next from right pane into bottom
-            workspace.join_pane_into_next(workspace.active_pane().clone(), window, cx);
+            workspace.join_pane_into_next(workspace.active_pane().clone(), true, window, cx);
         });
 
         workspace.update_in(cx, |workspace, window, cx| {
@@ -11766,7 +11779,7 @@ mod tests {
             assert!(item_ids_in_pane.contains(&bottom_item.item_id()));
 
             // Join into next from bottom pane into left
-            workspace.join_pane_into_next(workspace.active_pane().clone(), window, cx);
+            workspace.join_pane_into_next(workspace.active_pane().clone(), true, window, cx);
         });
 
         workspace.update_in(cx, |workspace, window, cx| {
@@ -11781,7 +11794,7 @@ mod tests {
             assert!(item_ids_in_pane.contains(&left_item.item_id()));
 
             // Join into next from left pane into top
-            workspace.join_pane_into_next(workspace.active_pane().clone(), window, cx);
+            workspace.join_pane_into_next(workspace.active_pane().clone(), true, window, cx);
         });
 
         workspace.update_in(cx, |workspace, window, cx| {
@@ -11797,7 +11810,7 @@ mod tests {
             assert!(item_ids_in_pane.contains(&top_item.item_id()));
 
             // Single pane left: no-op
-            workspace.join_pane_into_next(workspace.active_pane().clone(), window, cx)
+            workspace.join_pane_into_next(workspace.active_pane().clone(), true, window, cx)
         });
 
         workspace.update(cx, |workspace, _cx| {

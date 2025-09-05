@@ -240,6 +240,8 @@ actions!(
         ActivateLastItem,
         /// Switches to the alternate file.
         AlternateFile,
+        /// Closes the pane and moves tabs to the next pane.
+        ClosePane,
         /// Navigates back in history.
         GoBack,
         /// Navigates forward in history.
@@ -310,6 +312,7 @@ pub enum Event {
     JoinAll,
     JoinIntoNext,
     ChangeItemTitle,
+    ClosePane,
     Focus,
     ZoomIn,
     ZoomOut,
@@ -342,6 +345,7 @@ impl fmt::Debug for Event {
                 .finish(),
             Event::JoinAll => f.write_str("JoinAll"),
             Event::JoinIntoNext => f.write_str("JoinIntoNext"),
+            Event::ClosePane => f.write_str("ClosePane"),
             Event::ChangeItemTitle => f.write_str("ChangeItemTitle"),
             Event::Focus => f.write_str("Focus"),
             Event::ZoomIn => f.write_str("ZoomIn"),
@@ -4263,6 +4267,9 @@ impl Render for Pane {
             }))
             .on_action(cx.listener(|pane, _: &SplitAndMoveRight, window, cx| {
                 pane.split(SplitDirection::Right, SplitMode::MovePane, window, cx)
+            }))
+            .on_action(cx.listener(|_, _: &ClosePane, _, cx| {
+                cx.emit(Event::ClosePane);
             }))
             .on_action(cx.listener(|_, _: &JoinIntoNext, _, cx| {
                 cx.emit(Event::JoinIntoNext);

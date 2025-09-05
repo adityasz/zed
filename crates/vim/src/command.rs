@@ -1532,15 +1532,8 @@ fn generate_commands(_: &App) -> Vec<VimCommand> {
             .filename(|_action, filename| Some(VimEdit { filename }.boxed_clone())),
         VimCommand::new(
             ("q", "uit"),
-            workspace::CloseActiveItem {
-                save_intent: Some(SaveIntent::Close),
-                close_pinned: false,
-            },
-        )
-        .bang(workspace::CloseActiveItem {
-            save_intent: Some(SaveIntent::Skip),
-            close_pinned: true,
-        }),
+            workspace::ClosePane,
+        ),
         VimCommand::new(
             ("wq", ""),
             workspace::CloseActiveItem {
